@@ -1,0 +1,28 @@
+Select is used to query records from db , ie select * from tb1;
+update is used to update records in db, update tb1 set firstname='abcd' where empid=1
+insert is used to insert records in db, insert into tb1 (col1,col2) values ('','')
+delete is used to delete records from db , delete from tb1 where empid =1
+
+order by  is used to sort the records (by default its asending ) if required in desending order than DESC,ASC is used for ascending
+
+max , min , avg, sum ,count are aggrevated function which work on multiple rows and give output.
+
+group by is used to make grouping of rows based on a similar rows together and having clause is used on  col which have aggrevated funtion.
+ 
+eg 
+SELECT COUNT(CustomerID), Country
+FROM Customers
+GROUP BY Country
+HAVING COUNT(CustomerID) > 5;
+
+extract(month from timestamp) This is used to extract month from timestamp ,similarly day ,year ,hour ,minute are also extracted
+
+On similar lines SELECT date_trunc('minute', TIMESTAMP '2017-03-17 02:09:30'); is used in postgres
+
+like is used to partial matching of string eg. like '%abcde%' or 'abcd%' ,1st will match all records which have abcde str in it ,2nd will  match startwith abcd
+
+inner join is used to extract all records from two or more table based on matching column(col on which join is based).
+
+left join will extract all records from left table and matching records from right table and null in the col values which are not matching
+
+right join will extract all records from right table and matching records from left table and null in the col values which  are not matching
