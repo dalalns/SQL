@@ -1,0 +1,16 @@
+Decorators
+More on Decorators
+List Comprehensions
+Python Generators
+testing 
+Nosqldb
+caching
+restapi
+authentication and authorization methodlogies
+Message brokers (RabbitMQ,kafka)
+Learn a search engine (Elastic Search,Solr,Sphinx)
+Learn how to use docker
+Knowledge of webserver (Apache,Nginx,Caddy,MS IIS)
+Learn how to use web socket
+graphql
+graphdb
