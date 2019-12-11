@@ -26,3 +26,343 @@ inner join is used to extract all records from two or more table based on matchi
 left join will extract all records from left table and matching records from right table and null in the col values which are not matching
 
 right join will extract all records from right table and matching records from left table and null in the col values which  are not matching
+
+Retrieve everything from a table
+select * from cd.facilities
+
+Retrieve specific columns from a table
+select name , membercost from cd.facilities
+
+Control which rows are retrieved
+select * from cd.facilities
+where membercost !=0 and guestcost!=0
+
+Control which rows are retrieved - part 2
+select facid,name,membercost,monthlymaintenance from cd.facilities
+where monthlymaintenance/50>membercost and membercost!=0
+
+Basic string searches
+select * from cd.facilities
+where name like '%Tennis%'
+
+Matching against multiple possible values
+select * from cd.facilities
+where facid=1 or facid=5
+
+Classify results into buckets
+select name,
+case when monthlymaintenance>100 then 'expensive'
+	 else 'cheap'
+end as cost	 
+from cd.facilities
+
+Working with dates
+select memid,surname,firstname,joindate 
+from cd.members
+where joindate >='2012-09-01'
+
+Removing duplicates, and ordering results
+select distinct surname from cd.members
+order by surname
+limit 10
+
+Combining results from multiple queries
+select surname from cd.members
+union
+select name from cd.facilities
+
+
+Simple aggregation
+select max(joindate) as latest from cd.members
+
+More aggregation
+select firstname,surname,max(joindate) as joindate from cd.members
+group by firstname,surname
+order by joindate desc
+limit 1
+
+Retrieve the start times of members' bookings
+select bk.starttime from cd.bookings bk
+inner join cd.members mk
+on bk.memid=mk.memid
+where firstname='David' and surname='Farrell'
+
+Work out the start times of bookings for tennis courts
+select bk.starttime,fk.name from cd.bookings bk
+inner join cd.facilities fk
+on bk.facid=fk.facid
+where fk.name like 'Tennis Court%' and starttime>='2012-09-21' and starttime<'2012-09-22'
+
+
+Produce a list of all members who have recommended another member
+select distinct mk.firstname,mk.surname from cd.members mk
+inner join cd.members mk1
+on mk.memid=mk1.recommendedby
+order by mk.surname,mk.firstname
+
+Produce a list of all members, along with their recommender
+select mk.firstname,mk.surname,mk1.firstname as recfname,mk1.surname as recsname from cd.members mk
+left outer join cd.members mk1
+on mk1.memid=mk.recommendedby
+order by mk.surname,mk.firstname
+
+Produce a list of all members who have used a tennis court
+select distinct mk.firstname ||' '||mk.surname as member,fk.name from cd.members mk
+inner join cd.bookings bk
+on mk.memid=bk.memid
+inner join cd.facilities fk
+on bk.facid=fk.facid
+where fk.name like 'Tennis Court%'
+order by member
+
+Produce a list of costly bookings
+select mk.firstname||' '||mk.surname as member,fk.name,
+(case when bk.memid=0 then bk.slots*fk.guestcost
+	 else bk.slots*fk.membercost 
+end)
+from cd.members mk
+inner join cd.bookings bk
+on mk.memid=bk.memid
+inner join cd.facilities fk
+on bk.facid=fk.facid
+where (case when bk.memid=0 then bk.slots*fk.guestcost
+	 else bk.slots*fk.membercost 
+end)>30 and starttime >='2012-09-14' and starttime<'2012-09-15'
+order by (case when bk.memid=0 then bk.slots*fk.guestcost
+	 else bk.slots*fk.membercost 
+end) desc
+
+
+Produce a list of all members, along with their recommender, using no joins.
+select distinct mk.firstname||' '||mk.surname as member,(select mk1.firstname||' '||mk1.surname as recommender
+from cd.members mk1
+where mk1.memid=mk.recommendedby)
+from cd.members mk
+order by member
+
+Produce a list of costly bookings, using a subquery
+select member, facility, cost from (
+	select 
+		mems.firstname || ' ' || mems.surname as member,
+		facs.name as facility,
+		case
+			when mems.memid = 0 then
+				bks.slots*facs.guestcost
+			else
+				bks.slots*facs.membercost
+		end as cost
+		from
+			cd.members mems
+			inner join cd.bookings bks
+				on mems.memid = bks.memid
+			inner join cd.facilities facs
+				on bks.facid = facs.facid
+		where
+			bks.starttime >= '2012-09-14' and
+			bks.starttime < '2012-09-15'
+	) as bookings
+	where cost > 30
+order by cost desc;          
+
+Insert some data into a table
+insert into cd.facilities values(9,'Spa',20,30,100000,800)
+
+Insert multiple rows of data into a table
+insert into cd.facilities
+values (9,'Spa',20,30,100000,800),(10,'Squash Court 2',3.5,17.5,5000,80)
+
+Insert calculated data into a table
+insert into cd.facilities
+values ((select max(facid) from cd.facilities)+1,'Spa',20,30,100000,800)
+
+Update some existing data
+update cd.facilities
+set initialoutlay=10000
+where initialoutlay=8000
+
+Update multiple rows and columns at the same time
+update cd.facilities
+set membercost=6 ,guestcost=30
+where name like 'Tennis Court%'
+
+Update a row based on the contents of another row
+update cd.facilities
+set membercost=membercost+0.1*membercost,guestcost=guestcost+guestcost*0.1
+where name like 'Tennis Court 2'
+
+Delete all bookings
+delete from cd.bookings
+
+Delete a member from the cd.members table
+delete from cd.members
+where memid=37
+
+Delete based on a subquery
+delete from cd.members 
+where memid not in (select memid from cd.bookings)
+
+Count the number of facilities
+select count(facid) from cd.facilities
+
+Count the number of expensive facilities
+select count(facid) from cd.facilities
+where guestcost>=10
+
+Count the number of recommendations each member makes.
+select recommendedby,count(memid) from cd.members
+where recommendedby is not null
+group by recommendedby
+order by recommendedby
+
+List the total slots booked per facility
+select bk.facid,sum(bk.slots) from cd.bookings bk
+inner join cd.facilities fk
+on bk.facid=fk.facid
+group by bk.facid
+order by bk.facid
+
+List the total slots booked per facility in a given month
+select fk.facid,sum(bk.slots) as s from cd.bookings bk
+inner join cd.facilities fk
+on bk.facid=fk.facid
+where bk.starttime >='2012-09-01' and bk.starttime <'2012-10-01'
+group by fk.facid
+order by s
+
+List the total slots booked per facility per month
+select bk.facid,extract(month from bk.starttime) as month,sum(bk.slots) from cd.bookings bk
+inner join cd.facilities fk
+on bk.facid=fk.facid
+where bk.starttime>='2012-01-01' and bk.starttime<='2012-12-31'
+group by bk.facid,month
+order by bk.facid,month
+
+Find the count of members who have made at least one booking
+select count(memid) from cd.members
+where memid in (select memid from cd.bookings)
+
+List facilities with more than 1000 slots booked
+select bk.facid,sum(bk.slots) from cd.bookings bk
+inner join cd.facilities fk
+on bk.facid=fk.facid
+group by fk.name,bk.facid
+having sum(bk.slots)>1000
+order by facid
+
+Find the total revenue of each facility
+select fk.name,
+sum(case when bk.memid=0 then bk.slots*fk.guestcost
+	 else bk.slots*fk.membercost
+end)as revenue
+from cd.facilities fk
+inner join cd.bookings bk
+on fk.facid=bk.facid
+group by fk.name
+order by revenue
+
+Find facilities with a total revenue less than 1000
+select fk.name,
+sum(case when bk.memid=0 then bk.slots*fk.guestcost
+		 else bk.slots*fk.membercost
+end)as revenue
+from cd.facilities fk
+inner join cd.bookings bk
+on fk.facid=bk.facid
+group by fk.name
+having sum(case when bk.memid=0 then bk.slots*fk.guestcost
+		 else bk.slots*fk.membercost
+end)<1000
+order by revenue
+
+Output the facility id that has the highest number of slots booked
+select facid,sum(slots)
+from cd.bookings
+group by facid
+order by sum(slots) desc
+limit 1
+
+List the total slots booked per facility per month, part 2
+select bk.facid,extract(month from bk.starttime) as month,sum(bk.slots) from cd.bookings bk
+inner join cd.facilities fk
+on bk.facid=fk.facid
+where bk.starttime >'2012-01-01' and bk.starttime <='2012-12-31'
+group by rollup(bk.facid,month)
+order by facid,month
+
+List the total hours booked per named facility
+select bk.facid,fk.name,sum(bk.slots*0.50) from cd.bookings bk
+inner join cd.facilities fk
+on bk.facid=fk.facid
+group by fk.name,bk.facid
+order by bk.facid
+
+List each member's first booking after September 1st 2012
+select mk.surname,mk.firstname,mk.memid,min(bk.starttime)as starttime from cd.members mk
+inner join cd.bookings bk
+on mk.memid=bk.memid
+where starttime >='2012-09-01'
+group by mk.memid
+order by memid
+
+Produce a list of member names, with each row containing the total member count
+select count(*) over(),firstname,surname from cd.members
+group by firstname,surname,joindate
+order by joindate
+
+Produce a numbered list of members
+select rank() over(order by memid),firstname,surname from cd.members
+group by firstname,surname,joindate,memid
+order by joindate
+
+Output the facility id that has the highest number of slots booked, again
+select bk.facid,sum(bk.slots) from cd.bookings bk
+inner join cd.facilities fk
+on bk.facid=fk.facid
+group by fk.name,bk.facid
+order by sum desc
+limit 1
+
+Format the names of members
+select surname||', '||firstname as name from cd.members
+
+Find facilities by a name prefix
+select * from cd.facilities
+where name like 'Tennis%'
+
+Perform a case-insensitive search
+select * from cd.facilities
+where name ilike 'tennis%'
+
+Find telephone numbers with parentheses
+select memid,telephone from cd.members 
+where telephone like '(%'
+
+Pad zip codes with leading zeroes
+select lpad(cast(zipcode AS varchar),5,'0') as zip from cd.members
+order by zipcode
+
+Count the number of members whose surname starts with each letter of the alphabet
+select (substring(surname,1,1))as letter,count(*) from cd.members
+group by letter
+order by letter
+
+Clean up telephone numbers
+select memid,translate(telephone,'(-  )','') from cd.members
+
+
+Produce a timestamp for 1 a.m. on the 31st of August 2012
+select timestamp '2012-08-31 01:00:00';
+
+Subtract timestamps from each other
+select timestamp '2012-08-31 01:00:00' - timestamp '2012-07-30 01:00:00' as interval
+
+Generate a list of all the dates in October 2012
+select generate_series(timestamp '2012-10-01 00:00:00',timestamp '2012-10-31 00:00:00',interval '1day') as ts
+
+Get the day of the month from a timestamp
+select extract(day from timestamp '2012-08-31');
+
+Work out the number of seconds between timestamps
+select extract(epoch from (timestamp '2012-09-02 00:00:00'- timestamp '2012-08-31 01:00:00'))
+
+
