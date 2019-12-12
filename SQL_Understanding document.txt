@@ -27,6 +27,12 @@ left join will extract all records from left table and matching records from rig
 
 right join will extract all records from right table and matching records from left table and null in the col values which  are not matching
 
+
+
+https://pgexercises.com/questions/date/endtimes.html
+
+To see the table structure
+
 Retrieve everything from a table
 select * from cd.facilities
 
@@ -365,4 +371,9 @@ select extract(day from timestamp '2012-08-31');
 Work out the number of seconds between timestamps
 select extract(epoch from (timestamp '2012-09-02 00:00:00'- timestamp '2012-08-31 01:00:00'))
 
+
+Work out the number of days remaining in the month
+select (date_trunc('month',ts.testts) + interval '1 month') 
+		- date_trunc('day', ts.testts) as remaining
+	from (select timestamp '2012-02-11 01:00:00' as testts) ts
 
