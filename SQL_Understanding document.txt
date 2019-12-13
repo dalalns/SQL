@@ -377,3 +377,27 @@ select (date_trunc('month',ts.testts) + interval '1 month')
 		- date_trunc('day', ts.testts) as remaining
 	from (select timestamp '2012-02-11 01:00:00' as testts) ts
 
+Work out the end time of bookings
+select starttime,starttime + slots* interval '30 minutes' as endtime from cd.bookings
+order by endtime desc,starttime desc
+limit 10
+
+Return a count of bookings for each month
+select distinct extract (year from starttime)||'-0'|| extract (month from starttime)||'-01 '||'00:00:00' as month ,count(facid) over(partition by extract(month from starttime)) As "count" from cd.bookings
+group by month,facid,starttime
+order by month
+
+Work out the utilisation percentage for each facility by month
+select name, month, 
+	round((100*slots)/
+		cast(
+			25*(cast((month + interval '1 month') as date)
+			- cast (month as date)) as numeric),1) as utilisation
+	from  (
+		select facs.name as name, date_trunc('month', starttime) as month, sum(slots) as slots
+			from cd.bookings bks
+			inner join cd.facilities facs
+				on bks.facid = facs.facid
+			group by facs.facid, month
+	) as inn
+order by name, month 
